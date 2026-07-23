@@ -3,8 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Bell, Search } from "lucide-react";
+import { Bell, LogOut, Search } from "lucide-react";
 import { getUser } from "@/lib/auth";
+
+import { clearAuth } from "@/lib/auth";
+import { logout } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 interface HeaderProps {
   companyName?: string;
@@ -28,6 +32,18 @@ export default function Header({
     }
   }, []);
 
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      clearAuth();
+      router.replace("/login");
+    }
+  };
   return (
     <motion.header
       initial={{ opacity: 0, y: 8 }}
@@ -60,18 +76,28 @@ export default function Header({
             <Bell className="h-4 w-4" />
           </button>
 
-          <Link
-            href="/profile"
-            className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white/80 px-3 py-2 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:bg-zinc-800"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-semibold text-white">
-              {userAvatar}
-            </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white/80 px-3 py-2 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:bg-zinc-800"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-semibold text-white">
+                {userAvatar}
+              </div>
 
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-              {displayName}
-            </span>
-          </Link>
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                {displayName}
+              </span>
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
+              title="Đăng xuất"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </motion.header>

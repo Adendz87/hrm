@@ -11,7 +11,7 @@ import {
   SectionHeader,
 } from "@/components/ui/blocks";
 import { getDepartments, getUserDetail, getUsers, registerEmployee } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import type { DepartmentRecord, UserRecord } from "@/lib/types";
 import { employeeFilters } from "@/mock/employees";
 import { CalendarDays, Search, Sparkles, UserPlus, X } from "lucide-react";
@@ -38,7 +38,7 @@ const initialForm = {
   status: "active",
   password: "",
   department_id: "",
-  position: "EMPLOYEE",
+  role: "EMPLOYEE",
 };
 
 const getStatusLabel = (status: string) => {
@@ -69,22 +69,28 @@ export default function EmployeesPage() {
   const [form, setForm] = useState(initialForm);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      return;
-    }
+    if (!getUser()) return;
 
     const loadData = async () => {
       setLoading(true);
+
       try {
-        const [departmentData, userData] = await Promise.all([getDepartments(token), getUsers(token)]);
+        const [departmentData, userData] = await Promise.all([
+          getDepartments(),
+          getUsers(),
+        ]);
+
         setDepartments(departmentData);
+
         setEmployees(
           userData.map((user: UserRecord) => ({
             id: user.id,
             name: user.name,
             role: user.position ?? "EMPLOYEE",
-            department: departmentData.find((item) => item.id === user.department_id)?.name ?? "Chưa phân công",
+            department:
+              departmentData.find(
+                (item) => item.id === user.department_id,
+              )?.name ?? "Chưa phân công",
             status: getStatusLabel(user.status ?? "active"),
             email: user.email,
           })),
@@ -118,15 +124,13 @@ export default function EmployeesPage() {
   }, [employees, filter, query]);
 
   const handleOpenDetail = async (employeeId: string | number) => {
-    const token = getToken();
-    if (!token || !employeeId) {
+    if (!employeeId) {
       return;
     }
-
     setDetailLoading(true);
     setSelectedUser(null);
     try {
-      const detail = await getUserDetail(token, String(employeeId));
+      const detail = await getUserDetail(String(employeeId));
       setSelectedUser(detail);
     } catch {
       setError("Không thể tải chi tiết nhân viên.");
@@ -137,13 +141,6 @@ export default function EmployeesPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const token = getToken();
-
-    if (!token) {
-      setError("Bạn cần đăng nhập trước khi tạo nhân viên.");
-      return;
-    }
-
     if (!form.employee_code || !form.name || !form.email || !form.password || !form.department_id) {
       setError("Vui lòng nhập đầy đủ các trường bắt buộc.");
       return;
@@ -169,9 +166,8 @@ export default function EmployeesPage() {
           status: form.status,
           password: form.password,
           department_id: form.department_id,
-          position: form.position,
+          role: form.role,
         },
-        token,
       );
 
       const departmentName = departments.find((item) => item.id === form.department_id)?.name ?? "Chưa phân công";
@@ -180,7 +176,7 @@ export default function EmployeesPage() {
         {
           id: created.user.id ?? created.user.email,
           name: created.user.name,
-          role: form.position,
+          role: form.role,
           department: departmentName,
           status: getStatusLabel(form.status),
           email: created.user.email,
@@ -482,7 +478,7 @@ export default function EmployeesPage() {
                 </label>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Vị trí
-                  <select value={form.position} onChange={(event) => setForm((prev) => ({ ...prev, position: event.target.value }))} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:border-zinc-800 dark:bg-zinc-950">
+                  <select value={form.role} onChange={(event) => setForm((prev) => ({ ...prev, position: event.target.value }))} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:border-zinc-800 dark:bg-zinc-950">
                     <option value="EMPLOYEE">Employee</option>
                     <option value="LEADER">Leader</option>
                     <option value="MANAGER">Manager</option>

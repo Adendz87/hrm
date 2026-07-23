@@ -125,10 +125,12 @@ export interface DepartmentRecord {
   name: string;
   description: string;
   manager_id?: string | null;
-  is_active: boolean;
+  is_active: boolean | number;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   deleted_at?: string | null;
+  headcount?: number;
+  lead?: string | null;
 }
 
 export interface UserRecord extends AuthUser {
@@ -175,7 +177,7 @@ export interface RegisterEmployeePayload {
   status: string;
   password: string;
   department_id: string;
-  position: string;
+  role: string;
 }
 
 export interface RegisterEmployeeResponse {

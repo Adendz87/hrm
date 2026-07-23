@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BadgeCheck, LockKeyhole, Mail } from "lucide-react";
 import { login } from "@/lib/api";
-import { getToken, setToken, setUser } from "@/lib/auth";
+import { getUser, setUser } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,13 +14,14 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (getToken()) {
+    if (getUser()) {
       router.replace("/dashboard");
     }
   }, [router]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
     if (!email || !password) {
       setError("Vui lòng nhập cả email và mật khẩu.");
       return;
@@ -31,8 +32,11 @@ export default function LoginPage() {
 
     try {
       const data = await login({ email, password });
-      setToken(data.access_token);
+
+      // Backend đã set HttpOnly Cookie
+      // Chỉ cần lưu thông tin user để hiển thị UI
       setUser(data.user);
+
       router.replace("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng nhập thất bại.");

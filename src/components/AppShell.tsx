@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/app/components/Sidebar";
 import Header from "@/app/components/Header";
 import PageHeader from "@/app/components/PageHeader";
-import { getToken } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
+
 
 export function AppShell({ children, title, description }: { children: ReactNode; title: string; description?: string }) {
     const router = useRouter();
     const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        if (!getToken()) {
+        if (!getUser()) {
             router.replace("/login");
             return;
         }
