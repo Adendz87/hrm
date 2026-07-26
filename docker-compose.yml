@@ -1,0 +1,14 @@
+services:
+  frontend:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - hrm-network
+
+networks:
+  hrm-network:
+    external: true
