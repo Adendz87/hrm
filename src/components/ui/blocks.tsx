@@ -4,20 +4,27 @@ export function Button({
   children,
   className = "",
   variant = "default",
+  size = "default",
   ...props
 }: {
   children: ReactNode;
   className?: string;
   variant?: "default" | "outline" | "ghost";
+  size?: "default" | "sm" | "lg";
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const base = "inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-medium transition-all shadow-sm";
+  const base = "inline-flex items-center justify-center font-medium transition-all shadow-sm";
+  const sizes = {
+    default: "rounded-2xl px-4 py-2.5 text-sm",
+    sm: "rounded-xl px-3 py-1.5 text-xs",
+    lg: "rounded-2xl px-5 py-3 text-base",
+  };
   const variants = {
     default: "bg-zinc-950 text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-950",
     outline: "border border-zinc-200 bg-white/80 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-200",
     ghost: "bg-transparent text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100",
   };
   return (
-    <button className={[base, variants[variant], className].filter(Boolean).join(" ")} {...props}>
+    <button className={[base, sizes[size], variants[variant], className].filter(Boolean).join(" ")} {...props}>
       {children}
     </button>
   );

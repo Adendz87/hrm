@@ -1,34 +1,50 @@
-import type { Article, UploadResponse, GenerateResponse, GenerateParams, LoginParams, LoginResponse, NewsListResponse, NewsItem, UpdateParams, DepartmentPayload, DepartmentRecord, RegisterEmployeePayload, RegisterEmployeeResponse, UserRecord } from "./types";
+import type { Article, UploadResponse, GenerateResponse, GenerateParams, LoginParams, LoginResponse, NewsListResponse, NewsItem, UpdateParams, DepartmentPayload, DepartmentRecord, RegisterEmployeePayload, RegisterEmployeeResponse, UserRecord, RolePayload, RoleRecord, ContractRecord, CreateContractParams } from "./types";
 import { clearAuth } from "./auth";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
 // ─── Central fetch wrapper ───────────────────────────────────────────────────
 // Khi nhận 401: thử refresh token → retry request gốc → nếu vẫn fail thì /login
-let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
 
 async function tryRefresh(): Promise<boolean> {
-  if (isRefreshing) return false;
-  isRefreshing = true;
-
-  try {
-    const res = await fetch(`${BASE_URL}/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-    });
-    return res.ok;
-  } catch {
-    return false;
-  } finally {
-    isRefreshing = false;
+  if (refreshPromise) {
+    return refreshPromise;
   }
+
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const res = await fetch(input, init);
 
   if (res.status === 401) {
-    // Thử refresh access token
+    const urlString = typeof input === "string" ? input : input.toString();
+
+    // Nếu chính endpoint /auth/refresh bị 401 thì không thử refresh lại nữa
+    if (urlString.includes("/auth/refresh")) {
+      clearAuth();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+    }
+
+    // Thử refresh access token (các request đồng thời sẽ dùng chung 1 promise refresh)
     const refreshed = await tryRefresh();
 
     if (refreshed) {
@@ -165,6 +181,74 @@ export async function deleteDepartment(id: string): Promise<void> {
     throw new Error(data?.message?.[0] || data?.error || "Xóa phòng ban thất bại.");
   }
 }
+
+export async function getRoles(): Promise<RoleRecord[]> {
+  const res = await apiFetch(`${BASE_URL}/role`, {
+    credentials: "include",
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error);
+  }
+
+  return Array.isArray(data) ? data : (data.data ?? []);
+}
+
+export async function createRole(payload: RolePayload): Promise<RoleRecord> {
+  const res = await apiFetch(`${BASE_URL}/role`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error);
+  }
+
+  return data.data ?? data;
+}
+
+export async function updateRole(
+  id: string,
+  payload: Partial<RolePayload>,
+): Promise<RoleRecord> {
+  const res = await apiFetch(`${BASE_URL}/role/${id}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error || "Cập nhật vai trò thất bại.");
+  }
+
+  return data.data ?? data;
+}
+
+export async function deleteRole(id: string): Promise<void> {
+  const res = await apiFetch(`${BASE_URL}/role/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.message?.[0] || data?.error || "Xóa vai trò thất bại.");
+  }
+}
+
 
 export async function registerEmployee(
   payload: RegisterEmployeePayload,
@@ -327,3 +411,49 @@ export async function updateArticle(
 
   return data?.data ?? data;
 }
+
+// ─── Contracts ───────────────────────────────────────────────────────────────
+
+export async function getContracts(): Promise<ContractRecord[]> {
+  const res = await apiFetch(`${BASE_URL}/contract`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error || "Không thể tải danh sách hợp đồng.");
+  }
+
+  return data.data ?? data;
+}
+
+export async function createContract(params: CreateContractParams): Promise<ContractRecord> {
+  const formData = new FormData();
+  formData.append("employee_id", params.employee_id);
+  formData.append("contract_number", params.contract_number);
+  formData.append("contract_name", params.contract_name);
+  formData.append("type", params.type);
+  formData.append("salary", String(params.salary));
+  formData.append("start_date", params.start_date);
+  formData.append("end_date", params.end_date);
+  if (params.signed_date) formData.append("signed_date", params.signed_date);
+  if (params.note) formData.append("note", params.note);
+  if (params.file) formData.append("file", params.file);
+
+  const res = await apiFetch(`${BASE_URL}/contract`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error || "Tạo hợp đồng thất bại.");
+  }
+
+  return data.data ?? data;
+}
+

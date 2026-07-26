@@ -112,6 +112,24 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
+export interface RolePayload {
+  code: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+}
+
+export interface RoleRecord {
+  id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+}
+
 export interface DepartmentPayload {
   code: string;
   name: string;
@@ -160,6 +178,8 @@ export interface UserRecord extends AuthUser {
     deleted_at?: string | null;
   } | null;
   department_id?: string | null;
+  role?: RoleRecord | null;
+  role_id?: string | null;
   position?: string | null;
 }
 
@@ -177,9 +197,46 @@ export interface RegisterEmployeePayload {
   status: string;
   password: string;
   department_id: string;
-  role: string;
+  role_id: string;
+  position?: string;
 }
 
 export interface RegisterEmployeeResponse {
   user: AuthUser;
+}
+
+export type ContractType = "INTERN" | "PROBATION" | "OFFICIAL" | "FIXED_TERM" | "INDEFINITE";
+export type ContractStatus = "DRAFT" | "ACTIVE" | "EXPIRING" | "EXPIRED" | "TERMINATED";
+
+export interface ContractRecord {
+  id: string;
+  employee_id: string;
+  contract_number: string;
+  contract_name: string;
+  type: ContractType;
+  status: ContractStatus;
+  salary?: number | null;
+  start_date: string;
+  end_date: string;
+  signed_date?: string | null;
+  file_url?: string | null;
+  version?: number;
+  previous_contract_id?: string | null;
+  note?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  employee?: UserRecord | null;
+}
+
+export interface CreateContractParams {
+  employee_id: string;
+  contract_number: string;
+  contract_name: string;
+  type: ContractType;
+  salary: number | string;
+  start_date: string;
+  end_date: string;
+  signed_date?: string;
+  note?: string;
+  file?: File | null;
 }

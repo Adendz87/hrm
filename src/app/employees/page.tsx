@@ -10,9 +10,9 @@ import {
   LoadingState,
   SectionHeader,
 } from "@/components/ui/blocks";
-import { getDepartments, getUserDetail, getUsers, registerEmployee } from "@/lib/api";
+import { getDepartments, getRoles, getUserDetail, getUsers, registerEmployee } from "@/lib/api";
 import { getUser } from "@/lib/auth";
-import type { DepartmentRecord, UserRecord } from "@/lib/types";
+import type { DepartmentRecord, RoleRecord, UserRecord } from "@/lib/types";
 import { employeeFilters } from "@/mock/employees";
 import { CalendarDays, Search, Sparkles, UserPlus, X } from "lucide-react";
 
@@ -38,7 +38,8 @@ const initialForm = {
   status: "active",
   password: "",
   department_id: "",
-  role: "EMPLOYEE",
+  position: "EMPLOYEE",
+  role_id: "",
 };
 
 const getStatusLabel = (status: string) => {
@@ -63,6 +64,7 @@ export default function EmployeesPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [departments, setDepartments] = useState<DepartmentRecord[]>([]);
+  const [roles, setRoles] = useState<RoleRecord[]>([]);
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -75,18 +77,20 @@ export default function EmployeesPage() {
       setLoading(true);
 
       try {
-        const [departmentData, userData] = await Promise.all([
+        const [departmentData, userData, roleData] = await Promise.all([
           getDepartments(),
           getUsers(),
+          getRoles(),
         ]);
 
         setDepartments(departmentData);
+        setRoles(roleData);
 
         setEmployees(
           userData.map((user: UserRecord) => ({
             id: user.id,
             name: user.name,
-            role: user.position ?? "EMPLOYEE",
+            role: user.role?.name ?? user.position ?? "EMPLOYEE",
             department:
               departmentData.find(
                 (item) => item.id === user.department_id,
@@ -141,8 +145,8 @@ export default function EmployeesPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.employee_code || !form.name || !form.email || !form.password || !form.department_id) {
-      setError("Vui lòng nhập đầy đủ các trường bắt buộc.");
+    if (!form.employee_code || !form.name || !form.email || !form.password || !form.department_id || !form.role_id) {
+      setError("Vui lòng nhập đầy đủ các trường bắt buộc (bao gồm Phòng ban và Vai trò).");
       return;
     }
 
@@ -166,17 +170,19 @@ export default function EmployeesPage() {
           status: form.status,
           password: form.password,
           department_id: form.department_id,
-          role: form.role,
+          role_id: form.role_id,
+          position: form.position,
         },
       );
 
       const departmentName = departments.find((item) => item.id === form.department_id)?.name ?? "Chưa phân công";
+      const roleName = roles.find((r) => r.id === form.role_id)?.name ?? form.position;
 
       setEmployees((prev) => [
         {
           id: created.user.id ?? created.user.email,
           name: created.user.name,
-          role: form.role,
+          role: roleName,
           department: departmentName,
           status: getStatusLabel(form.status),
           email: created.user.email,
@@ -463,6 +469,27 @@ export default function EmployeesPage() {
                 <textarea value={form.address} onChange={(event) => setForm((prev) => ({ ...prev, address: event.target.value }))} rows={3} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:border-zinc-800 dark:bg-zinc-950" placeholder="Hà Nội, Việt Nam" />
               </label>
 
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Phòng ban <span className="text-rose-500">*</span>
+                  <select value={form.department_id} onChange={(event) => setForm((prev) => ({ ...prev, department_id: event.target.value }))} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:border-zinc-800 dark:bg-zinc-950">
+                    <option value="">-- Chọn phòng ban --</option>
+                    {departments.map((department) => (
+                      <option key={department.id} value={department.id}>{department.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Vai trò (Role) <span className="text-rose-500">*</span>
+                  <select value={form.role_id} onChange={(event) => setForm((prev) => ({ ...prev, role_id: event.target.value }))} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:border-zinc-800 dark:bg-zinc-950">
+                    <option value="">-- Chọn vai trò --</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>{role.name} ({role.code})</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
               <div className="grid gap-4 md:grid-cols-3">
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Ngày tuyển dụng
@@ -477,8 +504,8 @@ export default function EmployeesPage() {
                   </select>
                 </label>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Vị trí
-                  <select value={form.role} onChange={(event) => setForm((prev) => ({ ...prev, position: event.target.value }))} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:border-zinc-800 dark:bg-zinc-950">
+                  Vị trí (Position)
+                  <select value={form.position} onChange={(event) => setForm((prev) => ({ ...prev, position: event.target.value }))} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:border-zinc-800 dark:bg-zinc-950">
                     <option value="EMPLOYEE">Employee</option>
                     <option value="LEADER">Leader</option>
                     <option value="MANAGER">Manager</option>
@@ -486,16 +513,6 @@ export default function EmployeesPage() {
                   </select>
                 </label>
               </div>
-
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Phòng ban
-                <select value={form.department_id} onChange={(event) => setForm((prev) => ({ ...prev, department_id: event.target.value }))} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 dark:border-zinc-800 dark:bg-zinc-950">
-                  <option value="">-- Chọn phòng ban --</option>
-                  {departments.map((department) => (
-                    <option key={department.id} value={department.id}>{department.name}</option>
-                  ))}
-                </select>
-              </label>
 
               <div className="flex justify-end gap-3 pt-2">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>Hủy</Button>
