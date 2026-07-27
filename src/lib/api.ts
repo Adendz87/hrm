@@ -1,4 +1,4 @@
-import type { Article, UploadResponse, GenerateResponse, GenerateParams, LoginParams, LoginResponse, NewsListResponse, NewsItem, UpdateParams, DepartmentPayload, DepartmentRecord, AttendancePayload, AttendanceRecord, RegisterEmployeePayload, RegisterEmployeeResponse, UserRecord, RolePayload, RoleRecord, ContractRecord, CreateContractParams } from "./types";
+import type { Article, UploadResponse, GenerateResponse, GenerateParams, LoginParams, LoginResponse, NewsListResponse, NewsItem, UpdateParams, DepartmentPayload, DepartmentRecord, AttendancePayload, AttendanceRecord, AttendanceDashboardResponse, AttendanceDashboardItem, RegisterEmployeePayload, RegisterEmployeeResponse, UserRecord, RolePayload, RoleRecord, ContractRecord, CreateContractParams } from "./types";
 import { clearAuth } from "./auth";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
@@ -185,6 +185,84 @@ export async function checkOutAttendance(): Promise<AttendanceRecord> {
 
   if (!res.ok) {
     throw new Error(data?.message?.[0] || data?.error || "Check-out thất bại.");
+  }
+
+  return data.data ?? data;
+}
+
+export async function getTodayAttendanceStatus(): Promise<{ checked_in: boolean; checked_out: boolean; message?: string }> {
+  const res = await apiFetch(`${BASE_URL}/attendance/today`, {
+    credentials: "include",
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error || "Không thể tải trạng thái chấm công.");
+  }
+
+  return data.data ?? data;
+}
+
+export async function getWeeklyAttendanceSummary(): Promise<Array<{ day: string; present: number; late: number }>> {
+  const res = await apiFetch(`${BASE_URL}/attendance/weekly-summary`, {
+    credentials: "include",
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error || "Không thể tải tổng hợp chấm công tuần.");
+  }
+
+  return Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+}
+
+export async function getAttendanceDashboard(): Promise<AttendanceDashboardResponse> {
+  const res = await apiFetch(`${BASE_URL}/attendance/dashboard`, {
+    credentials: "include",
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error || "Không thể tải dashboard chấm công.");
+  }
+
+  return data.data ?? data;
+}
+
+export async function getTodayAttendanceList(params?: {
+  keyword?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  items: AttendanceDashboardItem[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}> {
+  const searchParams = new URLSearchParams();
+  if (params?.keyword !== undefined && params?.keyword !== null) {
+    searchParams.append("keyword", params.keyword);
+  }
+  if (params?.page) searchParams.append("page", String(params.page));
+  if (params?.limit) searchParams.append("limit", String(params.limit));
+
+  const queryString = searchParams.toString();
+  const url = `${BASE_URL}/attendance/today-list${queryString ? `?${queryString}` : ""}`;
+
+  const res = await apiFetch(url, {
+    credentials: "include",
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error || "Không thể tải danh sách chấm công hôm nay.");
   }
 
   return data.data ?? data;

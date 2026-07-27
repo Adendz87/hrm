@@ -153,6 +153,69 @@ export interface AttendanceRecord extends AttendancePayload {
   updated_at: string;
 }
 
+export interface AttendanceDashboardMyAttendance {
+  checkedIn: boolean;
+  checkedOut: boolean;
+  checkIn?: string | null;
+  checkOut?: string | null;
+  status?: string | null;
+  workTime?: {
+    start: string;
+    end: string;
+  } | null;
+}
+
+export interface AttendanceDashboardDaySummary {
+  date: string;
+  day: string;
+  present: number;
+  late: number;
+  absent: number;
+  leave: number;
+}
+
+export interface AttendanceDashboardStatistics {
+  present: number;
+  late: number;
+  absent: number;
+  leave: number;
+}
+
+export interface AttendanceDashboardItem {
+  id: string;
+  user_id: string;
+  user: UserRecord;
+  work_date: string;
+  check_in?: string | null;
+  check_out?: string | null;
+  status?: string | null;
+  type?: string | null;
+  note?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AttendanceDashboardResponse {
+  myAttendance: AttendanceDashboardMyAttendance;
+  weeklySummary: {
+    week: number;
+    year: number;
+    startDate: string;
+    endDate: string;
+    data: AttendanceDashboardDaySummary[];
+  };
+  statistics: AttendanceDashboardStatistics;
+  todayList: {
+    items: AttendanceDashboardItem[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
 export interface DepartmentRecord {
   id: string;
   code: string;
