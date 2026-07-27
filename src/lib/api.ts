@@ -1,4 +1,4 @@
-import type { Article, UploadResponse, GenerateResponse, GenerateParams, LoginParams, LoginResponse, NewsListResponse, NewsItem, UpdateParams, DepartmentPayload, DepartmentRecord, RegisterEmployeePayload, RegisterEmployeeResponse, UserRecord, RolePayload, RoleRecord, ContractRecord, CreateContractParams } from "./types";
+import type { Article, UploadResponse, GenerateResponse, GenerateParams, LoginParams, LoginResponse, NewsListResponse, NewsItem, UpdateParams, DepartmentPayload, DepartmentRecord, AttendancePayload, AttendanceRecord, RegisterEmployeePayload, RegisterEmployeeResponse, UserRecord, RolePayload, RoleRecord, ContractRecord, CreateContractParams } from "./types";
 import { clearAuth } from "./auth";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
@@ -96,7 +96,11 @@ export async function getDepartments(): Promise<DepartmentRecord[]> {
     throw new Error(data?.message?.[0] || data?.error);
   }
 
-  return Array.isArray(data) ? data : (data.data ?? []);
+  const departmentData = Array.isArray(data) ? data : (data.data ?? []);
+
+  return departmentData.filter(
+    (item: unknown): item is DepartmentRecord => typeof item === "object" && item !== null,
+  );
 }
 
 export async function getUsers(): Promise<UserRecord[]> {
@@ -125,6 +129,65 @@ export async function getUserDetail(id: string): Promise<UserRecord> {
   }
 
   return data.userWithoutPassword ?? data.data;
+}
+
+export async function createAttendance(
+  payload: AttendancePayload,
+): Promise<AttendanceRecord> {
+  const res = await apiFetch(`${BASE_URL}/attendance`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error || "Tạo chấm công thất bại.");
+  }
+
+  return data.data ?? data;
+}
+
+export async function checkInAttendance(): Promise<AttendanceRecord> {
+  const res = await apiFetch(`${BASE_URL}/attendance/check-in`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error || "Check-in thất bại.");
+  }
+
+  return data.data ?? data;
+}
+
+export async function checkOutAttendance(): Promise<AttendanceRecord> {
+  const res = await apiFetch(`${BASE_URL}/attendance/check-out`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message?.[0] || data?.error || "Check-out thất bại.");
+  }
+
+  return data.data ?? data;
 }
 
 export async function createDepartment(

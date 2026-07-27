@@ -122,6 +122,10 @@ export default function DepartmentsPage() {
 
   if (loading) return <LoadingState />;
 
+  const safeDepartments = departments.filter(
+    (department): department is DepartmentRecord => Boolean(department) && typeof department === "object",
+  );
+
   // ─── Delete ────────────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!editTarget) return;
@@ -190,14 +194,14 @@ export default function DepartmentsPage() {
 
   return (
     <AppShell title="Quản lý phòng ban" description="Giữ cấu trúc tổ chức rõ ràng, gọn gàng và dễ phát triển.">
-      {departments.length === 0 ? (
+      {safeDepartments.length === 0 ? (
         <EmptyState
           title="Chưa có phòng ban nào"
           description="Hãy tạo phòng ban đầu tiên để bắt đầu tổ chức nhân sự."
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {departments.map((department) => (
+          {safeDepartments.map((department) => (
             <Card key={department.id}>
               <div className="flex items-start justify-between gap-3">
                 <div>

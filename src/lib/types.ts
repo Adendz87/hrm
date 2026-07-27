@@ -137,6 +137,22 @@ export interface DepartmentPayload {
   is_active: boolean;
 }
 
+export interface AttendancePayload {
+  user_id: string;
+  work_date: string;
+  check_in?: string;
+  check_out?: string;
+  status: string;
+  type: string;
+  note?: string;
+}
+
+export interface AttendanceRecord extends AttendancePayload {
+  id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DepartmentRecord {
   id: string;
   code: string;

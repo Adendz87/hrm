@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   BriefcaseBusiness,
+  CheckCircle2,
   ChevronRight,
   Compass,
   LayoutGrid,
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/positions", label: "Vị trí", icon: BriefcaseBusiness },
   { href: "/contracts", label: "Hợp đồng", icon: BriefcaseBusiness },
   { href: "/attendance", label: "Chấm công", icon: LayoutGrid },
+  { href: "/attendance/employee", label: "Check-in nhân viên", icon: CheckCircle2 },
   { href: "/leave", label: "Nghỉ phép", icon: Compass },
   { href: "/payroll", label: "Lương", icon: LayoutGrid },
   { href: "/rewards", label: "Khen thưởng", icon: Bell },
